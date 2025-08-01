@@ -2,25 +2,9 @@ from data_access.database import get_db_connection
 from mysql.connector import Error
 
 class SeatRepository:
-    """
-    Clase que encapsula las operaciones CRUD para la tabla 'seats' en la base de datos MySQL.
-    Se enfoca en la gestión de los asientos dentro de las salas.
-    """
 
     def create_seats_for_room(self, room_id, capacity):
-        """
-        Crea un número específico de asientos para una sala dada.
-        Se asume que los asientos se nombran secuencialmente (ej. 'A1', 'A2', ...).
-        Esta es una operación para poblar inicialmente los asientos de una sala.
-        Utiliza INSERT IGNORE para evitar duplicados si se ejecuta varias veces.
 
-        Args:
-            room_id (int): El ID de la sala para la que se crean los asientos.
-            capacity (int): El número total de asientos que debe tener la sala.
-
-        Returns:
-            bool: True si la operación fue exitosa, False en caso de error.
-        """
         conn = get_db_connection()
         if conn is None:
             return False
@@ -58,16 +42,7 @@ class SeatRepository:
                 conn.close()
 
     def get_seats_by_room_id(self, room_id):
-        """
-        Obtiene todos los asientos asociados a una sala específica.
 
-        Args:
-            room_id (int): El ID de la sala.
-
-        Returns:
-            list: Una lista de diccionarios, donde cada diccionario representa un asiento.
-                  Retorna una lista vacía si no hay asientos o si ocurre un error.
-        """
         conn = get_db_connection()
         if conn is None:
             return []
@@ -79,7 +54,6 @@ class SeatRepository:
                 SELECT id, room_id, seat_name
                 FROM seats
                 WHERE room_id = %s
-                ORDER BY seat_name
             ''', (room_id,))
             seats = cursor.fetchall()
             return seats

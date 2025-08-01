@@ -9,7 +9,6 @@ DB_CONFIG = {
 }
 
 def get_db_connection():
-    """Establece y devuelve una conexión a la base de datos MySQL."""
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         if conn.is_connected():
@@ -20,61 +19,77 @@ def get_db_connection():
         return None
 
 def create_tables():
-    """Crea las tablas necesarias en la base de datos si no existen."""
     conn = get_db_connection()
     if conn is None:
         return
 
     cursor = conn.cursor()
-
     try:
-        cursor.execute('''
+        # Definición de la tabla 'movies'
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS movies (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                duration_minutes INT NOT NULL,
+                title VARCHAR(255) NOT NULL UNIQUE,
+                duration_minutes INT,
                 genre VARCHAR(100),
                 director VARCHAR(255),
                 synopsis TEXT
             );
-        ''')
+        """)
 
-        cursor.execute('''
+        # Definición de la tabla 'rooms'
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS rooms (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL UNIQUE,
+                name VARCHAR(100) NOT NULL UNIQUE,
                 capacity INT NOT NULL
             );
-        ''')
-        cursor.execute("INSERT IGNORE INTO rooms (id, name, capacity) VALUES (1, 'Sala Principal', 100)")
+        """)
 
-
-        cursor.execute('''
+        # Definición de la tabla 'sessions'
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 movie_id INT NOT NULL,
                 room_id INT NOT NULL,
-                start_time DATETIME NOT NULL, -- Usamos DATETIME para fechas y horas
+                start_time DATETIME NOT NULL,
                 end_time DATETIME NOT NULL,
-                price DECIMAL(5, 2) NOT NULL, -- DECIMAL para precios
+                price DECIMAL(5, 2) NOT NULL,
                 FOREIGN KEY (movie_id) REFERENCES movies(id),
                 FOREIGN KEY (room_id) REFERENCES rooms(id)
             );
-        ''')
+        """)
 
-        cursor.execute('''
+        # Definición de la tabla 'seats'
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS seats (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                session_id INT NOT NULL,
-                seat_number VARCHAR(10) NOT NULL, -- Ej: 'A1', 'B5'
-                is_booked BOOLEAN NOT NULL DEFAULT FALSE, -- BOOLEAN en MySQL
-                FOREIGN KEY (session_id) REFERENCES sessions(id),
-                UNIQUE (session_id, seat_number) -- Asegura que un asiento es único por sesión
+                room_id INT NOT NULL,
+                seat_name VARCHAR(10) NOT NULL,
+                FOREIGN KEY (room_id) REFERENCES rooms(id),
+                UNIQUE (room_id, seat_name)
             );
-        ''')
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS seat_reservations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id INT NOT NULL,
+                seat_id INT NOT NULL,
+                reservation_time DATETIME NOT NULL,
+                -- Agregamos un campo para saber qué usuario hizo la reserva
+                user_id INT,
+                FOREIGN KEY (session_id) REFERENCES sessions(id),
+                FOREIGN KEY (seat_id) REFERENCES seats(id),
+                UNIQUE (session_id, seat_id)
+            );
+        """)
 
-        conn.commit()
         print("Tablas verificadas y listas en MySQL.")
+        
+        # Opcional: Insertar una sala principal por defecto si no existe
+        cursor.execute("INSERT IGNORE INTO rooms (name, capacity) VALUES ('Sala Principal', 100);")
+        conn.commit()
 
     except Error as e:
         print(f"Error al crear tablas: {e}")
@@ -83,7 +98,6 @@ def create_tables():
         if conn and conn.is_connected():
             cursor.close()
             conn.close()
-            print("Conexión a MySQL cerrada.")
 
 if __name__ == '__main__':
     create_tables()

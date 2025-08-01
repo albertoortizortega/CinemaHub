@@ -3,25 +3,9 @@ from mysql.connector import Error
 from datetime import datetime
 
 class SessionRepository:
-    """
-    Clase que encapsula las operaciones CRUD para la tabla 'sessions' en la base de datos MySQL.
-    """
 
     def add_session(self, movie_id, room_id, start_time_str, end_time_str, price):
-        """
-        Añade una nueva sesión de cine a la tabla 'sessions'.
-        Los tiempos deben ser cadenas en formato 'YYYY-MM-DD HH:MM:SS'.
 
-        Args:
-            movie_id (int): ID de la película asociada a la sesión.
-            room_id (int): ID de la sala donde se proyecta la sesión.
-            start_time_str (str): Hora de inicio de la sesión (formato 'YYYY-MM-DD HH:MM:SS').
-            end_time_str (str): Hora de fin de la sesión (formato 'YYYY-MM-DD HH:MM:SS').
-            price (float): Precio de la entrada para esta sesión.
-
-        Returns:
-            int or None: El ID de la sesión recién insertada si es exitoso, None en caso de error.
-        """
         conn = get_db_connection()
         if conn is None:
             return None
@@ -47,13 +31,6 @@ class SessionRepository:
                 conn.close()
 
     def get_all_sessions(self):
-        """
-        Obtiene todas las sesiones de la tabla 'sessions', incluyendo detalles de la película y la sala.
-
-        Returns:
-            list: Una lista de diccionarios, donde cada diccionario representa una sesión con detalles.
-                  Retorna una lista vacía si no hay sesiones o si ocurre un error.
-        """
         conn = get_db_connection()
         if conn is None:
             return []
@@ -123,3 +100,25 @@ class SessionRepository:
                 cursor.close()
             if conn and conn.is_connected():
                 conn.close()
+
+    def get_sessions_by_room_id(self, room_id):
+        conn = get_db_connection()
+        if conn is None:
+            return []
+        
+        cursor = conn.cursor(dictionary=True)
+        sessions = []
+        try:
+            cursor.execute("""
+                SELECT id, movie_id, room_id, start_time, end_time, price 
+                FROM sessions 
+                WHERE room_id = %s
+            """, (room_id,))
+            sessions = cursor.fetchall()
+        except Error as e:
+            print(f"Error al obtener sesiones para la sala {room_id}: {e}")
+        finally:
+            if cursor: cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+        return sessions

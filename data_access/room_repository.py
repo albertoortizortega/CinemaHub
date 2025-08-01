@@ -2,14 +2,8 @@ from data_access.database import get_db_connection
 from mysql.connector import Error
 
 class RoomRepository:
-    """
-    Clase que encapsula las operaciones CRUD para la tabla 'rooms' en la base de datos MySQL.
-    """
 
     def add_room(self, name, capacity):
-        """
-        Añade una nueva sala a la tabla 'rooms'.
-        """
         conn = get_db_connection()
         if conn is None:
             return None
@@ -38,9 +32,6 @@ class RoomRepository:
                 conn.close()
 
     def get_all_rooms(self):
-        """
-        Obtiene todas las salas de la tabla 'rooms'.
-        """
         conn = get_db_connection()
         if conn is None:
             return []
@@ -61,9 +52,6 @@ class RoomRepository:
                 conn.close()
 
     def get_room_by_id(self, room_id):
-        """
-        Obtiene una sala específica por su ID.
-        """
         conn = get_db_connection()
         if conn is None:
             return None
@@ -84,10 +72,6 @@ class RoomRepository:
                 conn.close()
 
     def get_room_by_name(self, name):
-        """
-        Obtiene una sala específica por su nombre.
-        Útil para verificar si una sala ya existe antes de añadirla.
-        """
         conn = get_db_connection()
         if conn is None:
             return None
