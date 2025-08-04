@@ -3,9 +3,9 @@ from mysql.connector import Error
 
 DB_CONFIG = {
     'host': 'localhost',
-    'database': 'cinemahub',
+    'database': 'mysql',
     'user': 'root',
-    'password': 'BDII2023'
+    'password': '123456'
 }
 
 def get_db_connection():
