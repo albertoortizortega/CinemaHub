@@ -1,3 +1,5 @@
+# utils/db_initializer.py
+
 from data_access.database import get_db_connection
 from business_logic.cinema_manager import CinemaManager
 from mysql.connector import Error
@@ -8,7 +10,7 @@ def truncate_all_tables():
     conn = None
     cursor = None
     try:
-        conn = get_db_connection()
+        conn, _ = get_db_connection()
         if conn is None: return
 
         cursor = conn.cursor()
@@ -20,7 +22,6 @@ def truncate_all_tables():
         cursor.execute("TRUNCATE TABLE seat_reservations;")
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
         conn.commit()
-        print("Todas las tablas han sido vaciadas exitosamente.")
     except Error as e:
         print(f"Error al vaciar tablas: {e}")
         if conn: conn.rollback()
@@ -30,7 +31,6 @@ def truncate_all_tables():
             conn.close()
 
 def populate_movies(manager):
-    print("\n--- Poblando películas ---")
     movies_to_add = [
         ("El Padrino", 175, "Crimen, Drama", "Francis Ford Coppola", "La épica saga de la familia Corleone y su imperio criminal en Nueva York."),
         ("Oppenheimer", 180, "Biografía, Drama, Historia", "Christopher Nolan", "La historia del científico J. Robert Oppenheimer y su papel en el desarrollo de la bomba atómica.")
@@ -40,19 +40,16 @@ def populate_movies(manager):
             manager.movie_repo.add_movie(title, duration, genre, director, synopsis)
 
 def populate_rooms(manager):
-    print("\n--- Poblando salas ---")
-    rooms_to_add = [("Sala 2", 75), ("Sala VIP", 30)]
+    rooms_to_add = [("Sala Principal", 100), ("Sala 2", 75), ("Sala VIP", 30)]
     for name, capacity in rooms_to_add:
         if not manager.room_repo.get_room_by_name(name):
             manager.room_repo.add_room(name, capacity)
 
 def populate_sessions_and_seats(manager):
-    print("\n--- Poblando sesiones y asientos ---")
     movies = manager.movie_repo.get_all_movies()
     rooms = manager.room_repo.get_all_rooms()
 
     if not movies or not rooms:
-        print("Advertencia: No hay películas o salas para poblar.")
         return
 
     el_padrino_id = next((m['id'] for m in movies if m['title'] == 'El Padrino'), None)

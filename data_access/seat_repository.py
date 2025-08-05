@@ -2,39 +2,43 @@ from data_access.database import get_db_connection
 from mysql.connector import Error
 
 class SeatRepository:
-
     def create_seats_for_room(self, room_id, capacity):
-
-        conn = get_db_connection()
+        conn, _ = get_db_connection()
         if conn is None:
-            return False
-
-        cursor = None
+            return 0
+        
+        cursor = conn.cursor()
         try:
-            cursor = conn.cursor()
-            seats_added_count = 0
-            for i in range(1, capacity + 1):
+            cursor.execute("SELECT COUNT(*) FROM seats WHERE room_id = %s", (room_id,))
+            existing_seats_count = cursor.fetchone()[0]
 
-                row_char = chr(64 + ((i - 1) // 10) + 1)
-                seat_number_in_row = (i - 1) % 10 + 1
-                seat_name = f"{row_char}{seat_number_in_row}"
+            if existing_seats_count >= capacity:
+                return 0
 
-                cursor.execute('''
-                    INSERT IGNORE INTO seats (room_id, seat_name)
-                    VALUES (%s, %s)
-                ''', (room_id, seat_name))
-                if cursor.rowcount > 0:
-                    seats_added_count += 1
-            conn.commit()
-            if seats_added_count > 0:
-                print(f"Añadidos {seats_added_count} asientos (nuevos) para la sala ID {room_id}.")
-            else:
-                print(f"No se añadieron nuevos asientos para la sala ID {room_id} (ya existían).")
-            return True
+            new_seats_to_add = capacity - existing_seats_count
+            
+            letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            seat_values = []
+            
+            for row_index in range(10): # 10 filas A-J
+                row_letter = letters[row_index]
+                for seat_number in range(1, 11): # 10 asientos por fila
+                    seat_name = f"{row_letter}{seat_number}"
+                    seat_values.append((seat_name, room_id))
+
+            seats_to_insert = seat_values[:new_seats_to_add]
+
+            if seats_to_insert:
+                cursor.executemany("INSERT INTO seats (seat_name, room_id) VALUES (%s, %s)", seats_to_insert)
+                conn.commit()
+                return len(seats_to_insert)
+            
+            return 0
         except Error as e:
             print(f"Error al crear asientos para la sala {room_id}: {e}")
-            conn.rollback()
-            return False
+            if conn:
+                conn.rollback()
+            return 0
         finally:
             if cursor:
                 cursor.close()
@@ -42,35 +46,30 @@ class SeatRepository:
                 conn.close()
 
     def get_seats_by_room_id(self, room_id):
-
-        conn = get_db_connection()
+        conn, _ = get_db_connection()
         if conn is None:
             return []
-
-        cursor = None
+        
+        cursor = conn.cursor(dictionary=True)
+        seats = []
         try:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute('''
-                SELECT id, room_id, seat_name
+            cursor.execute("""
+                SELECT id, seat_name, room_id
                 FROM seats
                 WHERE room_id = %s
-            ''', (room_id,))
+            """, (room_id,))
             seats = cursor.fetchall()
-            return seats
         except Error as e:
             print(f"Error al obtener asientos para la sala {room_id}: {e}")
-            return []
         finally:
             if cursor:
                 cursor.close()
             if conn and conn.is_connected():
                 conn.close()
-
+        return seats
+    
     def get_seat_by_name_and_room_id(self, seat_name, room_id):
-        """
-        Obtiene el ID de un asiento a partir de su nombre y el ID de la sala.
-        """
-        conn = get_db_connection()
+        conn, _ = get_db_connection()
         if conn is None:
             return None
         
@@ -86,7 +85,8 @@ class SeatRepository:
         except Error as e:
             print(f"Error al obtener asiento por nombre y sala: {e}")
         finally:
-            if cursor: cursor.close()
+            if cursor:
+                cursor.close()
             if conn and conn.is_connected():
                 conn.close()
         return seat_id

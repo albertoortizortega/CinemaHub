@@ -10,15 +10,15 @@ DB_CONFIG = {
 
 def get_db_connection():
     conn = None
+    message = None
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         if conn.is_connected():
-            print(f"Conexión exitosa a la base de datos '{DB_CONFIG['database']}'")
-        return conn
+            message = f"Conexión exitosa a la base de datos '{DB_CONFIG['database']}'"
+        return conn, message
     except Error as e:
         if e.errno == 1049:  # Error 'Unknown database'
             print(f"La base de datos '{DB_CONFIG['database']}' no existe. Intentando crearla...")
-            # Intenta conectarse al servidor sin especificar la base de datos
             temp_config = DB_CONFIG.copy()
             temp_config['database'] = None
             try:
@@ -28,21 +28,23 @@ def get_db_connection():
                 cursor.close()
                 conn.close()
                 print(f"Base de datos '{DB_CONFIG['database']}' creada con éxito. Reconectando...")
-                # Una vez creada, intenta reconectarse a la base de datos correcta
-                return mysql.connector.connect(**DB_CONFIG)
+                conn = mysql.connector.connect(**DB_CONFIG)
+                message = f"Conexión exitosa a la base de datos '{DB_CONFIG['database']}'"
+                return conn, message
             except Error as e_create:
                 print(f"Error al crear la base de datos: {e_create}")
-                return None
+                return None, None
         else:
             print(f"Error al conectar a la base de datos MySQL: {e}")
-            return None
+            return None, None
 
 def create_tables():
-    conn = get_db_connection()
+    conn, _ = get_db_connection()
     if conn is None:
         return
 
     cursor = conn.cursor()
+    
     try:
         # Definición de la tabla 'movies'
         cursor.execute("""
@@ -114,8 +116,8 @@ def create_tables():
         print(f"Error al crear tablas: {e}")
         conn.rollback()
     finally:
+        if cursor: cursor.close()
         if conn and conn.is_connected():
-            cursor.close()
             conn.close()
 
 if __name__ == '__main__':

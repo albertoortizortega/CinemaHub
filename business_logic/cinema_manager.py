@@ -18,7 +18,7 @@ class CinemaManager:
         return self.movie_repo.get_all_movies()
 
     def get_all_sessions_details(self):
-        return self.session_repo.get_all_sessions()
+        return self.session_repo.get_all_sessions_details()
 
     def get_room_seats(self, room_id):
         return self.seat_repo.get_seats_by_room_id(room_id)
