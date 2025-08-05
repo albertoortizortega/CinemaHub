@@ -65,3 +65,28 @@ class SeatRepository:
                 cursor.close()
             if conn and conn.is_connected():
                 conn.close()
+
+    def get_seat_by_name_and_room_id(self, seat_name, room_id):
+        """
+        Obtiene el ID de un asiento a partir de su nombre y el ID de la sala.
+        """
+        conn = get_db_connection()
+        if conn is None:
+            return None
+        
+        cursor = conn.cursor()
+        seat_id = None
+        try:
+            cursor.execute("""
+                SELECT id FROM seats WHERE seat_name = %s AND room_id = %s
+            """, (seat_name, room_id))
+            result = cursor.fetchone()
+            if result:
+                seat_id = result[0]
+        except Error as e:
+            print(f"Error al obtener asiento por nombre y sala: {e}")
+        finally:
+            if cursor: cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+        return seat_id

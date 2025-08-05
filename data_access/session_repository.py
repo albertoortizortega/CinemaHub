@@ -65,9 +65,6 @@ class SessionRepository:
                 conn.close()
 
     def get_session_by_id(self, session_id):
-        """
-        Obtiene una sesión específica por su ID, incluyendo detalles de la película y la sala.
-        """
         conn = get_db_connection()
         if conn is None:
             return None

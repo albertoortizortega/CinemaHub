@@ -4,9 +4,6 @@ from mysql.connector import Error
 from datetime import datetime
 
 def truncate_all_tables():
-    """
-    Vacía todas las tablas de la base de datos de forma segura.
-    """
     print("\n--- Vaciando tablas de la base de datos ---")
     conn = None
     cursor = None
@@ -33,7 +30,6 @@ def truncate_all_tables():
             conn.close()
 
 def populate_movies(manager):
-    """Puebla la base de datos con películas de prueba."""
     print("\n--- Poblando películas ---")
     movies_to_add = [
         ("El Padrino", 175, "Crimen, Drama", "Francis Ford Coppola", "La épica saga de la familia Corleone y su imperio criminal en Nueva York."),
@@ -44,7 +40,6 @@ def populate_movies(manager):
             manager.movie_repo.add_movie(title, duration, genre, director, synopsis)
 
 def populate_rooms(manager):
-    """Puebla la base de datos con salas de prueba."""
     print("\n--- Poblando salas ---")
     rooms_to_add = [("Sala 2", 75), ("Sala VIP", 30)]
     for name, capacity in rooms_to_add:
@@ -52,9 +47,6 @@ def populate_rooms(manager):
             manager.room_repo.add_room(name, capacity)
 
 def populate_sessions_and_seats(manager):
-    """
-    Puebla la base de datos con una sesión de prueba y genera asientos para cada sala.
-    """
     print("\n--- Poblando sesiones y asientos ---")
     movies = manager.movie_repo.get_all_movies()
     rooms = manager.room_repo.get_all_rooms()

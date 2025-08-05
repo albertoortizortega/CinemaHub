@@ -63,36 +63,36 @@ class CinemaManager:
             print("Error desconocido al agendar la sesión.")
             return None
 
-    def book_seat(self, session_id, seat_id):
+    def book_seat(self, session_id, seat_name):
         session = self.session_repo.get_session_by_id(session_id)
         if not session:
             print("Error: La sesión no existe.")
             return None
-        
-        all_seats_in_room = self.seat_repo.get_seats_by_room_id(session['room_id'])
-        seat_exists = any(seat['id'] == seat_id for seat in all_seats_in_room)
-        if not seat_exists:
-            print(f"Error: El asiento {seat_id} no existe en la sala de la sesión {session_id}.")
+
+        seat_id = self.seat_repo.get_seat_by_name_and_room_id(seat_name, session['room_id'])
+        if not seat_id:
+            print(f"Error: El asiento '{seat_name}' no existe en la sala de la sesión {session_id}.")
             return None
-            
+
         reservation_id = self.seat_reservation_repo.add_seat_reservation(session_id, seat_id)
 
         if reservation_id:
-            print(f"¡Reserva exitosa! ID de reserva: {reservation_id} para el asiento {seat_id}.")
+            print(f"¡Reserva exitosa! ID de reserva: {reservation_id} para el asiento {seat_name}.")
             return reservation_id
         else:
             print("No se pudo completar la reserva. El asiento podría ya estar ocupado.")
             return None
         
     def get_session_seat_status(self, session_id):
-        session = self.session_repo.get_session_by_id(session_id)
-        if not session:
+        session_details = self.session_repo.get_session_by_id(session_id)
+        if not session_details:
             print(f"Error: La sesión con ID {session_id} no existe.")
             return None
 
-        room_id = session.get('room_id')
+        room_id = session_details.get('room_id')
         all_seats = self.seat_repo.get_seats_by_room_id(room_id)
 
+        import re
         def sort_seats(seat):
             match = re.match(r"([A-Z]+)(\d+)", seat['seat_name'])
             if match:
@@ -113,5 +113,6 @@ class CinemaManager:
                 'seat_name': seat['seat_name'],
                 'status': status
             })
-            
-        return seat_status
+        
+        session_details['seats'] = seat_status
+        return session_details
