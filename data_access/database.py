@@ -3,20 +3,39 @@ from mysql.connector import Error
 
 DB_CONFIG = {
     'host': 'localhost',
-    'database': 'mysql',
+    'database': 'cinemahub',
     'user': 'root',
     'password': '123456'
 }
 
 def get_db_connection():
+    conn = None
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         if conn.is_connected():
-            print(f"Conexión exitosa a la base de datos {DB_CONFIG['database']}")
+            print(f"Conexión exitosa a la base de datos '{DB_CONFIG['database']}'")
         return conn
     except Error as e:
-        print(f"Error al conectar a la base de datos MySQL: {e}")
-        return None
+        if e.errno == 1049:  # Error 'Unknown database'
+            print(f"La base de datos '{DB_CONFIG['database']}' no existe. Intentando crearla...")
+            # Intenta conectarse al servidor sin especificar la base de datos
+            temp_config = DB_CONFIG.copy()
+            temp_config['database'] = None
+            try:
+                conn = mysql.connector.connect(**temp_config)
+                cursor = conn.cursor()
+                cursor.execute(f"CREATE DATABASE {DB_CONFIG['database']}")
+                cursor.close()
+                conn.close()
+                print(f"Base de datos '{DB_CONFIG['database']}' creada con éxito. Reconectando...")
+                # Una vez creada, intenta reconectarse a la base de datos correcta
+                return mysql.connector.connect(**DB_CONFIG)
+            except Error as e_create:
+                print(f"Error al crear la base de datos: {e_create}")
+                return None
+        else:
+            print(f"Error al conectar a la base de datos MySQL: {e}")
+            return None
 
 def create_tables():
     conn = get_db_connection()

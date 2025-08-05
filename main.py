@@ -11,51 +11,77 @@ def initialize_app():
     create_tables()
     print("Base de datos verificada y tablas listas.")
 
-def run_tests(cinema_manager):
-    """
-    Ejecuta un conjunto de pruebas de lógica de negocio.
-    """
-    print("\n--- Pruebas de lógica de negocio ---")
-    movies = cinema_manager.get_available_movies()
-    rooms = cinema_manager.room_repo.get_all_rooms()
-    sessions = cinema_manager.get_all_sessions_details()
+def show_menu():
+    """Muestra el menú de opciones al usuario."""
+    print("\n--- Menú de CinemaHub ---")
+    print("1. Ver películas disponibles")
+    print("2. Ver todas las sesiones")
+    print("3. Ver asientos de una sesión y reservar")
+    print("4. Agendar nueva sesión (Solo para admins)")
+    print("0. Salir")
+    return input("Elige una opción: ")
 
-    el_padrino_id = next((m['id'] for m in movies if m['title'] == 'El Padrino'), None)
-    sala_principal_id = next((r['id'] for r in rooms if r['name'] == 'Sala Principal'), None)
-    first_session_id = next((s['id'] for s in sessions if s['room_name'] == 'Sala Principal'), None)
-    
-    if el_padrino_id and sala_principal_id and first_session_id:
-        print(f"\nProbando agendar una sesión en Sala Principal a las 22:00 (no solapa)...")
-        start_time_no_overlap = f"{datetime.now().strftime('%Y-%m-%d')} 22:00:00"
-        cinema_manager.schedule_new_session(el_padrino_id, sala_principal_id, start_time_no_overlap, 10.00)
-        
-        print(f"\nProbando agendar una sesión en Sala Principal a las 19:30 (SÍ solapa)...")
-        start_time_overlap = f"{datetime.now().strftime('%Y-%m-%d')} 19:30:00"
-        cinema_manager.schedule_new_session(el_padrino_id, sala_principal_id, start_time_overlap, 11.00)
+def handle_choice(choice, manager):
+    """Maneja la opción seleccionada por el usuario."""
+    if choice == '1':
+        movies = manager.get_available_movies()
+        print("\n--- Películas Disponibles ---")
+        for movie in movies:
+            print(f"ID: {movie['id']}, Título: {movie['title']}, Duración: {movie['duration_minutes']} min")
 
-        print(f"\nProbando reserva de asiento ID 1 para la sesión {first_session_id} (debe ser exitoso)...")
-        cinema_manager.book_seat(first_session_id, 1)
+    elif choice == '2':
+        sessions = manager.get_all_sessions_details()
+        print("\n--- Todas las Sesiones ---")
+        for session in sessions:
+            print(f"ID: {session['id']}, Película: {session['movie_title']}, Sala: {session['room_name']}, Hora: {session['start_time'].strftime('%H:%M')}, Precio: {session['price']}€")
 
-        print(f"Probando reservar el mismo asiento (ID 1) de nuevo (debe fallar)...")
-        cinema_manager.book_seat(first_session_id, 1)
+    elif choice == '3':
+        session_id = input("Introduce el ID de la sesión para ver asientos: ")
+        try:
+            session_id = int(session_id)
+            seat_status = manager.get_session_seat_status(session_id)
+            if seat_status:
+                print(f"\n--- Asientos para la Sesión ID {session_id} ---")
+                for seat in seat_status:
+                    print(f"Asiento: {seat['seat_name']} (ID: {seat['seat_id']}) - Estado: {seat['status']}")
+                
+                seat_id = input("Introduce el ID del asiento que quieres reservar (o presiona Enter para cancelar): ")
+                if seat_id:
+                    seat_id = int(seat_id)
+                    manager.book_seat(session_id, seat_id)
+        except ValueError:
+            print("Entrada no válida. Por favor, introduce un número.")
+        except Exception as e:
+            print(f"Ocurrió un error: {e}")
 
-        print("\n--- Mostrando estado de los asientos para la sesión 1 ---")
-        seat_status = cinema_manager.get_session_seat_status(first_session_id)
-        if seat_status:
-            for seat in seat_status:
-                print(f"Asiento: {seat['seat_name']} (ID: {seat['seat_id']}) - Estado: {seat['status']}")
+    elif choice == '4':
+        try:
+            movie_id = int(input("ID de la película: "))
+            room_id = int(input("ID de la sala: "))
+            start_time_str = input("Hora de inicio (YYYY-MM-DD HH:MM:SS): ")
+            price = float(input("Precio: "))
+            manager.schedule_new_session(movie_id, room_id, start_time_str, price)
+        except ValueError:
+            print("Entrada no válida. Asegúrate de introducir números donde corresponde.")
 
 # Bloque principal de ejecución
 if __name__ == "__main__":
-    user_input = input("¿Vaciar todas las tablas de datos? (s/n): ").lower()
+    user_input = input("¿Vaciar y poblar la base de datos con datos de prueba? (s/n): ").lower()
     if user_input == 's':
         truncate_all_tables()
-    
-    initialize_app()
-    cinema_manager = CinemaManager()
-    
-    populate_movies(cinema_manager)
-    populate_rooms(cinema_manager)
-    populate_sessions_and_seats(cinema_manager)
+        initialize_app()
+        cinema_manager = CinemaManager()
+        populate_movies(cinema_manager)
+        populate_rooms(cinema_manager)
+        populate_sessions_and_seats(cinema_manager)
+    else:
+        initialize_app()
+        cinema_manager = CinemaManager()
+        print("Base de datos inicializada. Se usarán los datos existentes.")
 
-    run_tests(cinema_manager)
+    while True:
+        user_choice = show_menu()
+        if user_choice == '0':
+            print("Saliendo de CinemaHub. ¡Hasta pronto!")
+            break
+        handle_choice(user_choice, cinema_manager)
