@@ -1,5 +1,3 @@
-# utils/db_initializer.py
-
 from data_access.database import get_db_connection
 from business_logic.cinema_manager import CinemaManager
 from mysql.connector import Error
